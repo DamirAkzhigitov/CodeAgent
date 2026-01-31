@@ -1,0 +1,20 @@
+{
+  "pending": [],
+  "processing": [],
+  "completed": [],
+  "failed": [
+    {
+      "id": "task-1769854208520-kvzm4ckhm",
+      "description": "Create a simple html file with title Hello World",
+      "status": "failed",
+      "createdAt": "2026-01-31T10:10:08.520Z",
+      "options": {
+        "createPR": true,
+        "baseBranch": "main"
+      },
+      "startedAt": "2026-01-31T10:10:24.205Z",
+      "failedAt": "2026-01-31T10:10:29.158Z",
+      "error": "Failed to create branch: Git Repository is empty. - https://docs.github.com/rest/git/refs#get-a-reference"
+    }
+  ]
+}
