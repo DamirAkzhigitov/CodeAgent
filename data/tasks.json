@@ -1,20 +1,49 @@
 {
   "pending": [],
   "processing": [],
-  "completed": [],
-  "failed": [
+  "completed": [
     {
       "id": "task-1769854208520-kvzm4ckhm",
       "description": "Create a simple html file with title Hello World",
-      "status": "failed",
-      "createdAt": "2026-01-31T10:10:08.520Z",
+      "status": "completed",
+      "createdAt": "2026-01-31T10:30:50.438Z",
       "options": {
         "createPR": true,
         "baseBranch": "main"
       },
-      "startedAt": "2026-01-31T10:10:24.205Z",
-      "failedAt": "2026-01-31T10:10:29.158Z",
-      "error": "Failed to create branch: Git Repository is empty. - https://docs.github.com/rest/git/refs#get-a-reference"
+      "startedAt": "2026-01-31T10:30:51.114Z",
+      "completedAt": "2026-01-31T10:31:00.028Z",
+      "result": {
+        "success": true,
+        "taskId": "task-1769855451114-881ef3uzd",
+        "branchName": "feature/task-1769855451114-881ef3uzd",
+        "files": [
+          {
+            "path": "index.html",
+            "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Hello World</title>\n</head>\n<body>\n    <h1>Hello World</h1>\n</body>\n</html>"
+          }
+        ],
+        "commitMessage": "feat: add index.html with Hello World title",
+        "pr": {
+          "number": 1,
+          "url": "https://github.com/DamirAkzhigitov/Playground/pull/1"
+        }
+      }
+    }
+  ],
+  "failed": [
+    {
+      "id": "task-1769891027341-ph4pw4qc1",
+      "description": "Update wording from Playground to Damir Web Site",
+      "status": "failed",
+      "createdAt": "2026-01-31T20:31:34.023Z",
+      "options": {
+        "createPR": true,
+        "baseBranch": "main"
+      },
+      "startedAt": "2026-01-31T20:31:58.917Z",
+      "failedAt": "2026-01-31T20:31:59.857Z",
+      "error": "Failed to generate code: 400 Invalid schema for response_format 'code_generation_output': In context=(), 'required' is required to be supplied and to be an array including every key in properties. Extra required key 'files' supplied."
     }
   ]
 }

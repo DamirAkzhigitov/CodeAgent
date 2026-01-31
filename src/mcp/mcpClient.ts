@@ -1,13 +1,13 @@
-import fetch from 'node-fetch';
-import { config } from '../../config.js';
+import fetch from 'node-fetch'
+import { config } from '../../config.js'
 
 export interface MCPToolParams {
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
 export interface MCPResponse {
-  success?: boolean;
-  [key: string]: unknown;
+  success?: boolean
+  [key: string]: unknown
 }
 
 /**
@@ -15,51 +15,57 @@ export interface MCPResponse {
  * Provides an abstraction layer for MCP server communication
  */
 export class MCPClient {
-  private serverUrl: string;
-  private enabled: boolean;
+  private serverUrl: string
+  private enabled: boolean
 
   constructor() {
-    this.serverUrl = config.mcp.serverUrl;
-    this.enabled = config.mcp.useMcpServer;
+    this.serverUrl = config.mcp.serverUrl
+    this.enabled = config.mcp.useMcpServer
   }
 
   /**
    * Call an MCP tool
    */
-  private async callTool(toolName: string, params: MCPToolParams): Promise<MCPResponse> {
+  private async callTool(
+    toolName: string,
+    params: MCPToolParams
+  ): Promise<MCPResponse> {
     if (!this.enabled) {
-      throw new Error('MCP server is not enabled');
+      throw new Error('MCP server is not enabled')
     }
 
     try {
       const response = await fetch(`${this.serverUrl}/tools/${toolName}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(params),
-      });
+        body: JSON.stringify(params)
+      })
 
       if (!response.ok) {
-        throw new Error(`MCP server error: ${response.statusText}`);
+        throw new Error(`MCP server error: ${response.statusText}`)
       }
 
-      const result = await response.json() as MCPResponse;
-      return result;
+      const result = (await response.json()) as MCPResponse
+      return result
     } catch (error) {
-      console.error(`Error calling MCP tool ${toolName}:`, error);
-      throw error;
+      console.error(`Error calling MCP tool ${toolName}:`, error)
+      throw error
     }
   }
 
   /**
    * Create a branch using MCP
    */
-  async createBranch(branchName: string, baseBranch: string = 'main'): Promise<MCPResponse> {
+  async createBranch(
+    branchName: string,
+    baseBranch: string = 'main'
+  ): Promise<MCPResponse> {
     return this.callTool('github_create_branch', {
       branch: branchName,
-      base: baseBranch,
-    });
+      base: baseBranch
+    })
   }
 
   /**
@@ -73,8 +79,8 @@ export class MCPClient {
     return this.callTool('github_create_commit', {
       branch,
       files,
-      message: commitMessage,
-    });
+      message: commitMessage
+    })
   }
 
   /**
@@ -90,8 +96,8 @@ export class MCPClient {
       title,
       body,
       head: headBranch,
-      base: baseBranch,
-    });
+      base: baseBranch
+    })
   }
 
   /**
@@ -99,24 +105,27 @@ export class MCPClient {
    */
   async getPullRequestComments(prNumber: number): Promise<MCPResponse> {
     return this.callTool('github_get_pull_request_comments', {
-      pr_number: prNumber,
-    });
+      pr_number: prNumber
+    })
   }
 
   /**
    * Merge a pull request using MCP
    */
-  async mergePullRequest(prNumber: number, mergeMethod: string = 'merge'): Promise<MCPResponse> {
+  async mergePullRequest(
+    prNumber: number,
+    mergeMethod: string = 'merge'
+  ): Promise<MCPResponse> {
     return this.callTool('github_merge_pull_request', {
       pr_number: prNumber,
-      merge_method: mergeMethod,
-    });
+      merge_method: mergeMethod
+    })
   }
 
   /**
    * Check if MCP is enabled
    */
   isEnabled(): boolean {
-    return this.enabled;
+    return this.enabled
   }
 }

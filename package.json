@@ -6,25 +6,44 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "npx tsx index.ts",
     "dev": "tsc --watch",
     "cli": "node dist/cli.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:codegen": "npx tsx src/agent/test-codeGenerator.ts",
+    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
+    "prepare": "husky"
   },
   "private": true,
   "dependencies": {
-    "openai": "6.17.0",
-    "fs-extra": "11.3.3",
-    "archiver": "6.0.2",
-    "form-data": "4.0.5",
-    "node-fetch": "3.3.2",
     "@octokit/rest": "22.0.1",
-    "dotenv": "17.2.3"
+    "archiver": "6.0.2",
+    "dotenv": "17.2.3",
+    "form-data": "4.0.5",
+    "fs-extra": "11.3.3",
+    "node-fetch": "3.3.2",
+    "openai": "6.17.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "22.19.7",
     "@types/archiver": "6.0.4",
     "@types/fs-extra": "11.0.4",
-    "typescript": "5.9.3"
+    "@types/node": "22.19.7",
+    "@vitest/ui": "^4.0.18",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "typescript": "5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "lint-staged": {
+    "*.{ts,js,json,md}": [
+      "prettier --write"
+    ]
   }
 }

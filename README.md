@@ -53,12 +53,14 @@ cp .env.example .env
 ```
 
 Required variables:
+
 - `OPENAI_API_KEY`: Get from [OpenAI](https://platform.openai.com/api-keys)
 - `GITHUB_TOKEN`: GitHub Personal Access Token with repo permissions
 - `GITHUB_OWNER`: Your GitHub username or organization
 - `GITHUB_REPO`: Repository name
 
 Optional:
+
 - `WORKER_POLL_INTERVAL`: How often to check for new tasks (default: 30000ms = 30 seconds)
 - `USE_MCP_SERVER`: Set to `true` to use MCP server (default: `false`)
 - `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:3000`)
@@ -85,6 +87,7 @@ npm run dev
 ```
 
 The agent will:
+
 - Start polling for tasks every N seconds (configurable)
 - Process tasks automatically as they're added to the queue
 - Generate code, create branches, commit, and open pull requests
@@ -146,13 +149,13 @@ Tasks are stored in `data/tasks.json`. You can manually add tasks:
 #### Method 3: Programmatic (Node.js)
 
 ```javascript
-import { TaskQueue } from './src/queue/taskQueue.js';
+import { TaskQueue } from './src/queue/taskQueue.js'
 
-const queue = new TaskQueue();
+const queue = new TaskQueue()
 await queue.addTask('Build a weather app with React', {
   createPR: true,
-  baseBranch: 'main',
-});
+  baseBranch: 'main'
+})
 ```
 
 ### Task Options
@@ -168,6 +171,7 @@ When adding a task, you can specify:
 ### Monitoring
 
 The agent logs:
+
 - Task processing start/completion
 - Branch and PR information
 - Errors and failures

@@ -20,13 +20,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "workspace",
-    "data"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "workspace", "data"]
 }
