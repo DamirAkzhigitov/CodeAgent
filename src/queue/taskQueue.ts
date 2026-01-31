@@ -12,13 +12,32 @@ export interface TaskOptions {
   branchName?: string
   requirements?: string
   existingFiles?: Record<string, string>
+  multiStep?: boolean // Enable/disable multi-step planning (default: true)
   [key: string]: unknown
+}
+
+export interface PlanStep {
+  id: string
+  description: string
+  status: 'pending' | 'in-progress' | 'completed' | 'failed'
+  order: number
+  dependencies?: string[] // Step IDs that must complete first
+  result?: {
+    files?: Array<{ path: string; content: string }>
+    commitMessage?: string
+  }
+  error?: string
+}
+
+export interface Plan {
+  steps: PlanStep[]
+  currentStepIndex: number
 }
 
 export interface Task {
   id: string
   description: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'in-progress'
   createdAt: string
   startedAt?: string
   completedAt?: string
@@ -26,6 +45,8 @@ export interface Task {
   options: TaskOptions
   result?: TaskResult
   error?: string
+  plan?: Plan
+  isMultiStep?: boolean
 }
 
 export interface TaskResult {
@@ -169,6 +190,93 @@ export class TaskQueue {
   }
 
   /**
+   * Update task with plan information (for multi-step tasks)
+   */
+  async updateTaskPlan(
+    taskId: string,
+    plan: Plan,
+    isMultiStep: boolean = true
+  ): Promise<Task> {
+    const tasks = await this.loadTasks()
+    let task: Task | undefined
+
+    // Find task in any queue
+    const processingIndex = tasks.processing.findIndex(t => t.id === taskId)
+    if (processingIndex !== -1) {
+      task = tasks.processing[processingIndex]
+    } else {
+      const pendingIndex = tasks.pending.findIndex(t => t.id === taskId)
+      if (pendingIndex !== -1) {
+        task = tasks.pending[pendingIndex]
+      }
+    }
+
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`)
+    }
+
+    task.plan = plan
+    task.isMultiStep = isMultiStep
+    if (isMultiStep && task.status === 'processing') {
+      task.status = 'in-progress'
+    }
+
+    await this.saveTasks(tasks)
+    return task
+  }
+
+  /**
+   * Update step status in a multi-step task
+   */
+  async updateStepStatus(
+    taskId: string,
+    stepId: string,
+    status: PlanStep['status'],
+    result?: PlanStep['result'],
+    error?: string
+  ): Promise<Task> {
+    const tasks = await this.loadTasks()
+    let task: Task | undefined
+
+    // Find task in any queue
+    const processingIndex = tasks.processing.findIndex(t => t.id === taskId)
+    if (processingIndex !== -1) {
+      task = tasks.processing[processingIndex]
+    } else {
+      const pendingIndex = tasks.pending.findIndex(t => t.id === taskId)
+      if (pendingIndex !== -1) {
+        task = tasks.pending[pendingIndex]
+      }
+    }
+
+    if (!task || !task.plan) {
+      throw new Error(`Task ${taskId} not found or does not have a plan`)
+    }
+
+    const step = task.plan.steps.find(s => s.id === stepId)
+    if (!step) {
+      throw new Error(`Step ${stepId} not found in task ${taskId}`)
+    }
+
+    step.status = status
+    if (result) {
+      step.result = result
+    }
+    if (error) {
+      step.error = error
+    }
+
+    // Update current step index
+    const completedSteps = task.plan.steps.filter(
+      s => s.status === 'completed'
+    ).length
+    task.plan.currentStepIndex = completedSteps
+
+    await this.saveTasks(tasks)
+    return task
+  }
+
+  /**
    * Mark task as completed
    */
   async completeTask(taskId: string, result: TaskResult): Promise<Task> {
@@ -229,8 +337,12 @@ export class TaskQueue {
 
   /**
    * Retry a failed task by moving it back to pending
+   * For multi-step tasks, can resume from the last completed step
    */
-  async retryTask(taskId: string): Promise<Task> {
+  async retryTask(
+    taskId: string,
+    resumeFromLastStep: boolean = false
+  ): Promise<Task> {
     const tasks = await this.loadTasks()
     const taskIndex = tasks.failed.findIndex(t => t.id === taskId)
 
@@ -239,14 +351,44 @@ export class TaskQueue {
     }
 
     const task = tasks.failed[taskIndex]
-    task.status = 'pending'
+
+    if (resumeFromLastStep && task.isMultiStep && task.plan) {
+      // Resume multi-step task: keep completed steps, reset failed steps
+      task.status = 'in-progress'
+      task.plan.steps.forEach(step => {
+        if (step.status === 'failed') {
+          step.status = 'pending'
+          step.error = undefined
+        }
+      })
+      // Reset current step index to first pending step
+      const firstPendingIndex = task.plan.steps.findIndex(
+        s => s.status === 'pending'
+      )
+      task.plan.currentStepIndex =
+        firstPendingIndex >= 0 ? firstPendingIndex : task.plan.steps.length
+    } else {
+      // Full retry: reset everything
+      task.status = 'pending'
+      if (task.plan) {
+        task.plan.steps.forEach(step => {
+          step.status = 'pending'
+          step.error = undefined
+          step.result = undefined
+        })
+        task.plan.currentStepIndex = 0
+      }
+    }
+
     task.createdAt = new Date().toISOString()
     // Clear previous error and timestamps
     task.error = undefined
     task.failedAt = undefined
     task.startedAt = undefined
     task.completedAt = undefined
-    task.result = undefined
+    if (!resumeFromLastStep) {
+      task.result = undefined
+    }
 
     tasks.failed.splice(taskIndex, 1)
     tasks.pending.push(task)

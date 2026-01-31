@@ -5,6 +5,7 @@ import { join } from 'path'
 import { z } from 'zod'
 import { zodTextFormat } from 'openai/helpers/zod'
 import { FileData } from '../github/githubClient'
+import { Plan, PlanStep } from '../queue/taskQueue.js'
 
 const FileDataItem = z.object({
   path: z.string(),
@@ -13,6 +14,17 @@ const FileDataItem = z.object({
 
 const FilesSchema = z.object({
   files: z.array(FileDataItem)
+})
+
+const PlanStepSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  order: z.number(),
+  dependencies: z.array(z.string()).optional()
+})
+
+const PlanSchema = z.object({
+  steps: z.array(PlanStepSchema)
 })
 
 export interface CodeGenerationContext {
@@ -163,8 +175,7 @@ Generate the complete code structure needed to accomplish this task.`
             content: `Task: ${taskDescription}\n\nFiles changed: ${files.map(f => f.path).join(', ')}\n\nGenerate a commit message.`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 100
+        temperature: 0.3
       })
 
       const message = completion.choices[0].message.content
@@ -172,6 +183,91 @@ Generate the complete code structure needed to accomplish this task.`
     } catch (error) {
       console.error('Error generating commit message:', error)
       return `feat: ${taskDescription}`
+    }
+  }
+
+  /**
+   * Generate a multi-step plan for a complex task
+   */
+  async generatePlan(taskDescription: string): Promise<Plan> {
+    try {
+      const systemPrompt = `You are an expert project planner. Your task is to break down complex tasks into clear, sequential steps.
+
+Guidelines:
+- Break down the task into logical, executable steps
+- Each step should be independent and achievable
+- Steps should be ordered sequentially
+- Steps can have dependencies on previous steps
+- Each step should have a clear description of what needs to be done
+- Return a plan with steps that have unique IDs, descriptions, order numbers, and optional dependencies
+
+Example format:
+{
+  "steps": [
+    {
+      "id": "step-1",
+      "description": "Set up project structure and dependencies",
+      "order": 1
+    },
+    {
+      "id": "step-2",
+      "description": "Implement core functionality",
+      "order": 2,
+      "dependencies": ["step-1"]
+    }
+  ]
+}`
+
+      const userPrompt = `Task: ${taskDescription}
+
+Break down this task into clear, sequential steps. Each step should be specific and actionable.`
+
+      const response = await this.openai.responses.parse({
+        model: 'gpt-4o-2024-08-06',
+        input: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        text: {
+          format: zodTextFormat(PlanSchema, 'Plan')
+        },
+        temperature: 0.7
+      })
+
+      const responseContent = response.output_parsed
+
+      if (!responseContent) {
+        throw new Error('No plan content from OpenAI')
+      }
+
+      // Initialize step statuses
+      const steps: PlanStep[] = responseContent.steps.map(step => ({
+        id: step.id,
+        description: step.description,
+        status: 'pending',
+        order: step.order,
+        dependencies: step.dependencies || []
+      }))
+
+      return {
+        steps,
+        currentStepIndex: 0
+      }
+    } catch (error) {
+      console.error('Error generating plan:', error)
+      // Fallback to a single-step plan
+      return {
+        steps: [
+          {
+            id: 'step-1',
+            description: taskDescription,
+            status: 'pending',
+            order: 1,
+            dependencies: []
+          }
+        ],
+        currentStepIndex: 0
+      }
     }
   }
 }
