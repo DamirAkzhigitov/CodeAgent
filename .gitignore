@@ -1,0 +1,10 @@
+node_modules/
+../../../Documents/portfolio/CodeAgent/.env
+workspace/
+data/
+*.log
+.DS_Store
+.idea/
+dist/
+*.tsbuildinfo
+.env
